@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -21,6 +22,24 @@ class BridgeToken {
 }
 
 enum BridgeCapability { google, missingGoogle, unavailable }
+
+/// Safe diagnostic labels; never forward exception messages/details.
+PlatformException bridgeInitializationFailure(Object error) {
+  const codes = {
+    'HMS_FIREBASE_INIT', 'HMS_IDENTITY_READ', 'HMS_GMS_CHECK',
+    'HMS_METADATA_READ', 'HMS_FACTORY_INSTALL', 'HMS_PROJECT_MISMATCH',
+    'HMS_APP_MISMATCH', 'HMS_PACKAGE_MISMATCH', 'HMS_DEBUGGABLE_DENIED',
+    'HMS_SIGNER_COUNT', 'HMS_SIGNER_DENIED', 'HMS_GMS_UPDATE_REQUIRED',
+    'HMS_GMS_DISABLED', 'HMS_GMS_INVALID', 'HMS_GMS_UPDATING',
+    'HMS_GMS_UNAVAILABLE', 'HMS_HOST_APP_ID_REQUIRED',
+    'HMS_PROVIDER_NOT_APPLICABLE',
+  };
+  final code = error is MissingPluginException ? 'HMS_PLUGIN_MISSING'
+      : error is TimeoutException ? 'HMS_NATIVE_TIMEOUT'
+      : error is PlatformException && codes.contains(error.code) ? error.code
+      : 'HMS_NATIVE_INIT_FAILED';
+  return PlatformException(code: code);
+}
 
 /// No provider is installed on import, plugin registration, web or iOS.
 /// Keep the normal Play Integrity path for [BridgeCapability.google].
@@ -48,8 +67,13 @@ class MekfeyaAppCheckBridge {
     required String firebaseAppId,
   }) async {
     _requireDev(environment, supabaseUrl, firebaseProjectId, firebaseAppId);
-    final value = await _channel.invokeMethod<String>('capability')
-        .timeout(const Duration(seconds: 5));
+    final String? value;
+    try {
+      value = await _channel.invokeMethod<String>('capability')
+          .timeout(const Duration(seconds: 5));
+    } catch (error) {
+      throw bridgeInitializationFailure(error);
+    }
     return switch (value) {
       'google' => BridgeCapability.google,
       'missingGoogle' => BridgeCapability.missingGoogle,
@@ -69,7 +93,7 @@ class MekfeyaAppCheckBridge {
     return _installation ??= _install(fetchToken).catchError((Object error) {
       _installation = null;
       _fetchToken = null;
-      throw StateError('HMS_PROVIDER_INSTALL_FAILED');
+      throw bridgeInitializationFailure(error);
     });
   }
 

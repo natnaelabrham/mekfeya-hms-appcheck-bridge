@@ -52,24 +52,29 @@ public final class MekfeyaAppCheckBridgePlugin
     }
 
     @Override public void onMethodCall(MethodCall call, MethodChannel.Result result) {
+        String failureCode = "HMS_FIREBASE_INIT";
         try {
             if (!"capability".equals(call.method) && !"installDev".equals(call.method)) {
                 result.notImplemented();
                 return;
             }
             FirebaseApp app = FirebaseApp.getInstance();
+            failureCode = "HMS_IDENTITY_READ";
             requireIdentity(app);
+            failureCode = "HMS_GMS_CHECK";
             int gms = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context);
             if ("capability".equals(call.method)) {
                 // Disabled, outdated, updating and invalid GMS are NOT "missing".
-                result.success(gms == ConnectionResult.SUCCESS ? "google" :
-                    gms == ConnectionResult.SERVICE_MISSING ? "missingGoogle" : "unavailable");
+                if (gms == ConnectionResult.SUCCESS) result.success("google");
+                else if (gms == ConnectionResult.SERVICE_MISSING) result.success("missingGoogle");
+                else result.error(BridgePolicy.gmsFailure(gms), null, null);
                 return;
             }
             if (gms != ConnectionResult.SERVICE_MISSING) {
                 result.error("HMS_PROVIDER_NOT_APPLICABLE", null, null);
                 return;
             }
+            failureCode = "HMS_METADATA_READ";
             ApplicationInfo host = context.getPackageManager().getApplicationInfo(
                 context.getPackageName(), PackageManager.GET_META_DATA);
             if (host.metaData == null || !"appid=119433157".equals(
@@ -78,6 +83,7 @@ public final class MekfeyaAppCheckBridgePlugin
                 return;
             }
             if (provider == null) {
+                failureCode = "HMS_FACTORY_INSTALL";
                 NativeProvider candidate = new NativeProvider(channel);
                 FirebaseAppCheck.getInstance(app).installAppCheckProviderFactory(requested -> {
                     if (!BridgePolicy.APP.equals(requested.getOptions().getApplicationId()) ||
@@ -89,10 +95,17 @@ public final class MekfeyaAppCheckBridgePlugin
                 provider = candidate;
             }
             result.success(null);
+        } catch (IdentityFailure denied) {
+            result.error(denied.code, null, null);
         } catch (Exception ignored) {
             // Never forward SDK exception text, tokens or credential details.
-            result.error("HMS_BRIDGE_CONFIGURATION", null, null);
+            result.error(failureCode, null, null);
         }
+    }
+
+    private static final class IdentityFailure extends Exception {
+        final String code;
+        IdentityFailure(String code) { this.code = code; }
     }
 
     @SuppressWarnings("deprecation")
@@ -113,7 +126,9 @@ public final class MekfeyaAppCheckBridgePlugin
         boolean debug = (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
         if (!BridgePolicy.allowed(app.getOptions().getProjectId(),
                 app.getOptions().getApplicationId(), context.getPackageName(), debug, hashes)) {
-            throw new IllegalStateException("HMS_ENVIRONMENT_DENIED");
+            throw new IdentityFailure(BridgePolicy.identityFailure(
+                app.getOptions().getProjectId(), app.getOptions().getApplicationId(),
+                context.getPackageName(), debug, hashes));
         }
     }
 

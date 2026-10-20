@@ -4,6 +4,19 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class BridgePolicyTest {
+    @Test public void diagnosticsAreFixedLabels() {
+        assertEquals("HMS_GMS_UPDATE_REQUIRED", BridgePolicy.gmsFailure(2));
+        assertEquals("HMS_GMS_DISABLED", BridgePolicy.gmsFailure(3));
+        assertEquals("HMS_GMS_INVALID", BridgePolicy.gmsFailure(9));
+        assertEquals("HMS_GMS_UPDATING", BridgePolicy.gmsFailure(18));
+        assertEquals("HMS_GMS_UNAVAILABLE", BridgePolicy.gmsFailure(12345));
+        assertEquals("HMS_SIGNER_DENIED", BridgePolicy.identityFailure(
+            BridgePolicy.PROJECT, BridgePolicy.APP, BridgePolicy.PACKAGE,
+            false, new String[]{"untrusted"}));
+        assertEquals("HMS_PROJECT_MISMATCH", BridgePolicy.identityFailure(
+            "secret", BridgePolicy.APP, BridgePolicy.PACKAGE, false,
+            new String[]{BridgePolicy.SIGNER}));
+    }
     @Test public void flutterFlowSignerIsDevOnlyAndNotDebuggable() {
         String[] signer = {BridgePolicy.FLUTTERFLOW_DEV_SIGNER};
         assertTrue(BridgePolicy.allowed(BridgePolicy.PROJECT, BridgePolicy.APP,

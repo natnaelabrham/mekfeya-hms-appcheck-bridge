@@ -26,4 +26,25 @@ final class BridgePolicy {
             token.matches("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+") &&
             expires > now + 1000 && expires <= now + 30 * 60 * 1000L;
     }
+
+    // Fixed labels only. No native exception text or actual identity values.
+    static String identityFailure(String project, String app, String pkg,
+                                  boolean debuggable, String[] signers) {
+        if (!PROJECT.equals(project)) return "HMS_PROJECT_MISMATCH";
+        if (!APP.equals(app)) return "HMS_APP_MISMATCH";
+        if (!PACKAGE.equals(pkg)) return "HMS_PACKAGE_MISMATCH";
+        if (debuggable) return "HMS_DEBUGGABLE_DENIED";
+        if (signers == null || signers.length != 1) return "HMS_SIGNER_COUNT";
+        return "HMS_SIGNER_DENIED";
+    }
+
+    static String gmsFailure(int code) {
+        switch (code) {
+            case 2: return "HMS_GMS_UPDATE_REQUIRED";
+            case 3: return "HMS_GMS_DISABLED";
+            case 9: return "HMS_GMS_INVALID";
+            case 18: return "HMS_GMS_UPDATING";
+            default: return "HMS_GMS_UNAVAILABLE";
+        }
+    }
 }
