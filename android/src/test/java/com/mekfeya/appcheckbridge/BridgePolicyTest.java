@@ -4,6 +4,24 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class BridgePolicyTest {
+    @Test public void flutterFlowSignerIsDevOnlyAndNotDebuggable() {
+        String[] signer = {BridgePolicy.FLUTTERFLOW_DEV_SIGNER};
+        assertTrue(BridgePolicy.allowed(BridgePolicy.PROJECT, BridgePolicy.APP,
+            BridgePolicy.PACKAGE, false, signer));
+        assertFalse(BridgePolicy.allowed(BridgePolicy.PROJECT, BridgePolicy.APP,
+            BridgePolicy.PACKAGE, true, signer));
+        assertFalse(BridgePolicy.allowed("telebusiness-25410", BridgePolicy.APP,
+            BridgePolicy.PACKAGE, false, signer));
+        assertFalse(BridgePolicy.allowed("production", BridgePolicy.APP,
+            BridgePolicy.PACKAGE, false, signer));
+        assertFalse(BridgePolicy.allowed(BridgePolicy.PROJECT, "wrong",
+            BridgePolicy.PACKAGE, false, signer));
+        assertFalse(BridgePolicy.allowed(BridgePolicy.PROJECT, BridgePolicy.APP,
+            "com.mekfeya.telecloud", false, signer));
+        assertFalse(BridgePolicy.allowed(BridgePolicy.PROJECT, BridgePolicy.APP,
+            BridgePolicy.PACKAGE, false,
+            new String[]{BridgePolicy.SIGNER, BridgePolicy.FLUTTERFLOW_DEV_SIGNER}));
+    }
     @Test public void releaseIdentityOnly() {
         assertTrue(BridgePolicy.allowed(BridgePolicy.PROJECT, BridgePolicy.APP,
             BridgePolicy.PACKAGE, false, new String[]{BridgePolicy.SIGNER}));
