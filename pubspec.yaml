@@ -1,0 +1,23 @@
+name: mekfeya_hms_appcheck_bridge
+description: Development-only native Firebase App Check provider bridge.
+version: 0.1.0-dev.1
+repository: https://github.com/natnaelabrham/mekfeya-hms-appcheck-bridge
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.14.0
+  http: ^1.2.0
+  huawei_safetydetect: 6.4.0+302
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.mekfeya.appcheckbridge
+        pluginClass: MekfeyaAppCheckBridgePlugin

@@ -1,0 +1,34 @@
+group 'com.mekfeya.appcheckbridge'
+version '0.1.0'
+
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.android.tools.build:gradle:8.3.0' }
+}
+apply plugin: 'com.android.library'
+repositories { google(); mavenCentral() }
+
+def core = findProject(':firebase_core')
+if (core == null || !core.properties['FirebaseSDKVersion']) {
+    throw new GradleException('firebase_core with FirebaseSDKVersion is required')
+}
+def bom = core.properties['FirebaseSDKVersion']
+if (rootProject.ext.has('FlutterFire') &&
+        rootProject.ext.get('FlutterFire')['FirebaseSDKVersion']) {
+    bom = rootProject.ext.get('FlutterFire')['FirebaseSDKVersion']
+}
+android {
+    namespace 'com.mekfeya.appcheckbridge'
+    compileSdk 35
+    defaultConfig { minSdk 23 }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+dependencies {
+    implementation platform("com.google.firebase:firebase-bom:${bom}")
+    implementation 'com.google.firebase:firebase-appcheck'
+    implementation 'com.google.android.gms:play-services-base:18.5.0'
+    testImplementation 'junit:junit:4.13.2'
+}
