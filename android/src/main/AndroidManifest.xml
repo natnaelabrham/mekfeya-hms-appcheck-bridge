@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Explicit visibility is required before treating a package as absent. -->
+    <queries>
+        <package android:name="com.google.android.gms" />
+        <package android:name="com.android.vending" />
+    </queries>
     <!-- No app IDs, signing credentials, activities or provider auto-installation.
          Host identity is checked before the provider can be installed. -->
 </manifest>

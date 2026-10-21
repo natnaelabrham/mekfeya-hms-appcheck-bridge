@@ -4,6 +4,16 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class BridgePolicyTest {
+    @Test public void missingStoreCodeRequiresBothGooglePackagesAbsent() {
+        assertTrue(BridgePolicy.missingGoogle(1, false, false));
+        assertTrue(BridgePolicy.missingGoogle(9, false, false));
+        assertFalse(BridgePolicy.missingGoogle(9, true, false));
+        assertFalse(BridgePolicy.missingGoogle(9, false, true));
+        assertFalse(BridgePolicy.missingGoogle(9, true, true));
+        for (int code : new int[]{0, 2, 3, 18, -1, 12345}) {
+            assertFalse(BridgePolicy.missingGoogle(code, false, false));
+        }
+    }
     @Test public void diagnosticsAreFixedLabels() {
         assertEquals("HMS_GMS_UPDATE_REQUIRED", BridgePolicy.gmsFailure(2));
         assertEquals("HMS_GMS_DISABLED", BridgePolicy.gmsFailure(3));

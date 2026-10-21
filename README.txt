@@ -2,17 +2,20 @@ Mekfeya HMS App Check bridge — Dev integration candidate
 
 STATUS
 This is not a general-purpose or production-ready attestation package.
-Version 0.1.0-dev.1 installs a native Firebase AppCheckProvider in the registered
+Version 0.1.0-dev.4 installs a native Firebase AppCheckProvider in the registered
 Development Android release only. Telecloud and Production are rejected.
 Successful compilation and synthetic tests are not physical-device acceptance.
 
 WHAT IT DOES
 - Registers through Flutter's normal plugin registration; no main.dart changes.
 - Keeps Android Gradle configuration inside the plugin, not the host app.
-- Requires the exact Dev Firebase identity, package and release signing certificate.
+- Requires the exact Dev Firebase identity, package and an approved Dev signer.
 - Rejects debuggable apps, unexpected signers and missing Huawei host App ID.
-- Allows installation only when Google Play Services reports SERVICE_MISSING.
-  Disabled, outdated, invalid or updating GMS does not select Huawei.
+- Allows installation for SERVICE_MISSING, or SERVICE_INVALID only when explicit
+  package queries confirm both Google Play services and Play Store are absent.
+  Google's SDK can report code 9 for a missing Play Store before checking GMS.
+  Installed invalid, disabled, outdated or updating GMS does not select Huawei.
+  Package query errors fail closed; there is no phone-model or brand bypass.
 - Supplies official server-issued Firebase App Check tokens to the native SDK,
   including its callable-function consumers, rather than only HTTP headers.
 - Deduplicates pending native and Dart requests; bounds callbacks and token expiry.

@@ -47,4 +47,10 @@ final class BridgePolicy {
             default: return "HMS_GMS_UNAVAILABLE";
         }
     }
+
+    static boolean missingGoogle(int code, boolean servicesPresent, boolean storePresent) {
+        // Google's availability API also returns 9 for a missing Play Store.
+        // Never reinterpret an installed invalid Google stack as absent.
+        return code == 1 || (code == 9 && !servicesPresent && !storePresent);
+    }
 }
