@@ -79,7 +79,9 @@ public final class MekfeyaAppCheckBridgePlugin
             failureCode = "HMS_METADATA_READ";
             ApplicationInfo host = context.getPackageManager().getApplicationInfo(
                 context.getPackageName(), PackageManager.GET_META_DATA);
-            if (host.metaData == null || !"appid=119433157".equals(
+            String expectedHuawei = BridgePolicy.TELE_PROJECT.equals(app.getOptions().getProjectId())
+                ? "appid=119427631" : "appid=119433157";
+            if (host.metaData == null || !expectedHuawei.equals(
                     host.metaData.getString("com.huawei.hms.client.appid"))) {
                 result.error("HMS_HOST_APP_ID_REQUIRED", null, null);
                 return;
@@ -88,8 +90,8 @@ public final class MekfeyaAppCheckBridgePlugin
                 failureCode = "HMS_FACTORY_INSTALL";
                 NativeProvider candidate = new NativeProvider(channel);
                 FirebaseAppCheck.getInstance(app).installAppCheckProviderFactory(requested -> {
-                    if (!BridgePolicy.APP.equals(requested.getOptions().getApplicationId()) ||
-                            !BridgePolicy.PROJECT.equals(requested.getOptions().getProjectId())) {
+                    if (!app.getOptions().getApplicationId().equals(requested.getOptions().getApplicationId()) ||
+                            !app.getOptions().getProjectId().equals(requested.getOptions().getProjectId())) {
                         throw new IllegalStateException("HMS_ENVIRONMENT_DENIED");
                     }
                     return candidate;

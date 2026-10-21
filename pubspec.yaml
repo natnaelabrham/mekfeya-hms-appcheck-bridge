@@ -1,6 +1,6 @@
 name: mekfeya_hms_appcheck_bridge
-description: Development-only native Firebase App Check provider bridge.
-version: 0.1.0-dev.8
+description: Identity-pinned Dev and Telecloud native Firebase App Check bridge.
+version: 0.1.0-telecloud.1
 repository: https://github.com/natnaelabrham/mekfeya-hms-appcheck-bridge
 publish_to: none
 environment:

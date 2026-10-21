@@ -4,6 +4,22 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class BridgePolicyTest {
+    @Test public void telecloudRequiresItsOwnCompleteIdentity() {
+        for (String signer : new String[]{BridgePolicy.TELE_SIGNER, BridgePolicy.TELE_PLAY_SIGNER}) {
+            assertTrue(BridgePolicy.allowed(BridgePolicy.TELE_PROJECT, BridgePolicy.TELE_APP,
+                BridgePolicy.TELE_PACKAGE, false, new String[]{signer}));
+            assertFalse(BridgePolicy.allowed(BridgePolicy.TELE_PROJECT, BridgePolicy.TELE_APP,
+                BridgePolicy.TELE_PACKAGE, true, new String[]{signer}));
+            assertFalse(BridgePolicy.allowed(BridgePolicy.PROJECT, BridgePolicy.APP,
+                BridgePolicy.PACKAGE, false, new String[]{signer}));
+        }
+        for (String signer : new String[]{BridgePolicy.SIGNER, BridgePolicy.FLUTTERFLOW_DEV_SIGNER, "untrusted"}) {
+            assertFalse(BridgePolicy.allowed(BridgePolicy.TELE_PROJECT, BridgePolicy.TELE_APP,
+                BridgePolicy.TELE_PACKAGE, false, new String[]{signer}));
+        }
+        assertFalse(BridgePolicy.allowed(BridgePolicy.TELE_PROJECT, BridgePolicy.APP,
+            BridgePolicy.TELE_PACKAGE, false, new String[]{BridgePolicy.TELE_SIGNER}));
+    }
     @Test public void missingOrInvalidAvailabilityMayAttemptHuaweiOnly() {
         assertTrue(BridgePolicy.mayAttemptHuawei(1));
         assertTrue(BridgePolicy.mayAttemptHuawei(9));

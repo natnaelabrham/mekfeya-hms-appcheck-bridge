@@ -1,0 +1,22 @@
+Telecloud promotion, 2026-10-21
+
+The existing Dev identity remains unchanged. Telecloud requires its own exact
+Firebase project/app, Android package and dedicated or Play signing certificate.
+Production and mixed-environment identities are rejected by the bridge.
+
+Telecloud Huawei App ID: 119427631
+Package: com.mekfeya.telecloud
+Firebase project: telebusiness-25410
+Manifest application metadata: com.huawei.hms.client.appid = appid=119427631
+
+Use TelecloudHuaweiTokenClient for Telecloud; DevHuaweiTokenClient stays Dev-only.
+installDev remains the backward-compatible method name; both complete approved
+environment tuples are accepted, never arbitrary endpoints or signer overrides.
+
+GMS availability 1 or 9 selects an independent Huawei verification attempt.
+It does not grant access. Failed Google integrity is not a Huawei fallback.
+Certificate chain, JWS, nonce, package, signer and freshness are checked server-side.
+Only official Firebase App Check tokens are handed to Firebase's SDK.
+Financial verification, user authorization and role checks remain independent.
+
+The consumer R8 keep rule is retained. No host Gradle or main.dart edits required.

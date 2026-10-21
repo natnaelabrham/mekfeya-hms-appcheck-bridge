@@ -51,6 +51,11 @@ class MekfeyaAppCheckBridge {
 
   static void _requireDev(String environment, String supabaseUrl,
       String firebaseProjectId, String firebaseAppId) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android &&
+        environment == 'Telecloud' &&
+        supabaseUrl == 'https://telecloud.mekfeya.com' &&
+        firebaseProjectId == 'telebusiness-25410' &&
+        firebaseAppId == '1:529220246645:android:bda15c864075e44d56ac3c') return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android ||
         environment != 'Development' ||
         supabaseUrl != 'https://cuqwnrlwqwtroqngfoir.supabase.co' ||

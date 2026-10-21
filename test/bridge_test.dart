@@ -25,7 +25,7 @@ void main() {
         firebaseProjectId: 'fintracker-dev-fa037',
         firebaseAppId: '1:853460861480:android:dcad031b3ecec2196b6b1d');
 
-  test('Telecloud and Production rejected before native call', () async {
+  test('mixed Telecloud/Dev identity and Production rejected before native call', () async {
     await expectLater(capability('Telecloud'), throwsStateError);
     await expectLater(capability('Production'), throwsStateError);
     expect(calls, 0);
@@ -37,6 +37,12 @@ void main() {
   });
   test('Dev capability passed through', () async {
     expect(await capability('Development'), BridgeCapability.missingGoogle);
+    expect(calls, 1);
+  });
+  test('complete Telecloud identity reaches native identity verification', () async {
+    expect(await MekfeyaAppCheckBridge.capability(environment: 'Telecloud',
+      supabaseUrl: 'https://telecloud.mekfeya.com', firebaseProjectId: 'telebusiness-25410',
+      firebaseAppId: '1:529220246645:android:bda15c864075e44d56ac3c'), BridgeCapability.missingGoogle);
     expect(calls, 1);
   });
   test('invalid GMS selects an explicit Huawei attempt, not an access grant', () async {
