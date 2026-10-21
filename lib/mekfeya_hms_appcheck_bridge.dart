@@ -21,7 +21,7 @@ class BridgeToken {
   }
 }
 
-enum BridgeCapability { google, missingGoogle, unavailable }
+enum BridgeCapability { google, missingGoogle, huaweiRequired, unavailable }
 
 /// Safe diagnostic labels; never forward exception messages/details.
 PlatformException bridgeInitializationFailure(Object error) {
@@ -77,6 +77,7 @@ class MekfeyaAppCheckBridge {
     return switch (value) {
       'google' => BridgeCapability.google,
       'missingGoogle' => BridgeCapability.missingGoogle,
+      'huaweiRequired' => BridgeCapability.huaweiRequired,
       _ => BridgeCapability.unavailable,
     };
   }

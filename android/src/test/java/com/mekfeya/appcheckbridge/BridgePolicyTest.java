@@ -4,14 +4,11 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class BridgePolicyTest {
-    @Test public void missingStoreCodeRequiresBothGooglePackagesAbsent() {
-        assertTrue(BridgePolicy.missingGoogle(1, false, false));
-        assertTrue(BridgePolicy.missingGoogle(9, false, false));
-        assertFalse(BridgePolicy.missingGoogle(9, true, false));
-        assertFalse(BridgePolicy.missingGoogle(9, false, true));
-        assertFalse(BridgePolicy.missingGoogle(9, true, true));
+    @Test public void missingOrInvalidAvailabilityMayAttemptHuaweiOnly() {
+        assertTrue(BridgePolicy.mayAttemptHuawei(1));
+        assertTrue(BridgePolicy.mayAttemptHuawei(9));
         for (int code : new int[]{0, 2, 3, 18, -1, 12345}) {
-            assertFalse(BridgePolicy.missingGoogle(code, false, false));
+            assertFalse(BridgePolicy.mayAttemptHuawei(code));
         }
     }
     @Test public void diagnosticsAreFixedLabels() {

@@ -39,6 +39,14 @@ void main() {
     expect(await capability('Development'), BridgeCapability.missingGoogle);
     expect(calls, 1);
   });
+  test('invalid GMS selects an explicit Huawei attempt, not an access grant', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (_) async { calls++; return 'huaweiRequired'; });
+    expect(await capability('Development'), BridgeCapability.huaweiRequired);
+    await expectLater(capability('Telecloud'), throwsStateError);
+    await expectLater(capability('Production'), throwsStateError);
+    expect(calls, 1); // Only the Development lookup reached the native channel.
+  });
   test('safe native failure is preserved without messages or details', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (_) async {

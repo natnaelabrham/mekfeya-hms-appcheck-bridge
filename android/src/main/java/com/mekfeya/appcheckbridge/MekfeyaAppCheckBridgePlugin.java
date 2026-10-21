@@ -63,22 +63,16 @@ public final class MekfeyaAppCheckBridgePlugin
             requireIdentity(app);
             failureCode = "HMS_GMS_CHECK";
             int gms = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context);
-            // Check explicit package visibility only for ambiguous SERVICE_INVALID.
-            // Package-manager errors propagate to the fail-closed stage handler.
-            boolean missingGoogle = gms == ConnectionResult.SERVICE_MISSING;
-            if (gms == ConnectionResult.SERVICE_INVALID) {
-                missingGoogle = BridgePolicy.missingGoogle(gms,
-                    packagePresent("com.google.android.gms"),
-                    packagePresent("com.android.vending"));
-            }
+            boolean mayAttemptHuawei = BridgePolicy.mayAttemptHuawei(gms);
             if ("capability".equals(call.method)) {
-                // Only confirmed absence may select Huawei; no brand-based bypass.
+                // Provider selection only, never a device-integrity verdict.
                 if (gms == ConnectionResult.SUCCESS) result.success("google");
-                else if (missingGoogle) result.success("missingGoogle");
+                else if (gms == ConnectionResult.SERVICE_MISSING) result.success("missingGoogle");
+                else if (mayAttemptHuawei) result.success("huaweiRequired");
                 else result.error(BridgePolicy.gmsFailure(gms), null, null);
                 return;
             }
-            if (!missingGoogle) {
+            if (!mayAttemptHuawei) {
                 result.error("HMS_PROVIDER_NOT_APPLICABLE", null, null);
                 return;
             }
@@ -114,18 +108,6 @@ public final class MekfeyaAppCheckBridgePlugin
     private static final class IdentityFailure extends Exception {
         final String code;
         IdentityFailure(String code) { this.code = code; }
-    }
-
-    @SuppressWarnings("deprecation")
-    private boolean packagePresent(String name) {
-        try {
-            // Includes disabled/uninstalled-with-data packages conservatively.
-            context.getPackageManager().getApplicationInfo(name,
-                PackageManager.MATCH_UNINSTALLED_PACKAGES);
-            return true;
-        } catch (PackageManager.NameNotFoundException absent) {
-            return false;
-        }
     }
 
     @SuppressWarnings("deprecation")

@@ -2,7 +2,7 @@ Mekfeya HMS App Check bridge — Dev integration candidate
 
 STATUS
 This is not a general-purpose or production-ready attestation package.
-Version 0.1.0-dev.5 installs a native Firebase AppCheckProvider in the registered
+Version 0.1.0-dev.6 installs a native Firebase AppCheckProvider in the registered
 Development Android release only. Telecloud and Production are rejected.
 Successful compilation and synthetic tests are not physical-device acceptance.
 
@@ -11,11 +11,12 @@ WHAT IT DOES
 - Keeps Android Gradle configuration inside the plugin, not the host app.
 - Requires the exact Dev Firebase identity, package and an approved Dev signer.
 - Rejects debuggable apps, unexpected signers and missing Huawei host App ID.
-- Allows installation for SERVICE_MISSING, or SERVICE_INVALID only when explicit
-  package queries confirm both Google Play services and Play Store are absent.
-  Google's SDK can report code 9 for a missing Play Store before checking GMS.
-  Installed invalid, disabled, outdated or updating GMS does not select Huawei.
-  Package query errors fail closed; there is no phone-model or brand bypass.
+- Approved Dev policy: SERVICE_MISSING or SERVICE_INVALID may attempt Huawei
+  attestation. SERVICE_INVALID returns huaweiRequired (not a claim of absence).
+  Neither availability result grants access or proves device integrity.
+  Disabled, outdated, updating and other GMS errors remain blocked.
+  No fallback follows a failed Google token/verdict. No phone-brand bypass.
+  Full server-verified Huawei evidence and all existing local checks still apply.
 - Supplies official server-issued Firebase App Check tokens to the native SDK,
   including its callable-function consumers, rather than only HTTP headers.
 - Deduplicates pending native and Dart requests; bounds callbacks and token expiry.
@@ -58,7 +59,7 @@ CALLER CONTRACT
 2. Keep existing environment checks and local device-security checks.
 3. Development Android release only: call MekfeyaAppCheckBridge.capability.
 4. google: retain normal FirebaseAppCheck.activate(PlayIntegrity).
-5. missingGoogle: installDev with DevHuaweiTokenClient.fetchToken as callback.
+5. missingGoogle or huaweiRequired: installDev with DevHuaweiTokenClient.fetchToken.
 6. unavailable: fail closed; do not try Huawei after a Google verification failure.
 7. Never call FirebaseAppCheck.activate again over the installed custom provider.
 8. Continue normal FirebaseAppCheck.getToken and the existing financial verifier.

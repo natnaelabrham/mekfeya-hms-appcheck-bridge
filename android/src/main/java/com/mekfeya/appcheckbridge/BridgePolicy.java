@@ -48,9 +48,10 @@ final class BridgePolicy {
         }
     }
 
-    static boolean missingGoogle(int code, boolean servicesPresent, boolean storePresent) {
-        // Google's availability API also returns 9 for a missing Play Store.
-        // Never reinterpret an installed invalid Google stack as absent.
-        return code == 1 || (code == 9 && !servicesPresent && !storePresent);
+    static boolean mayAttemptHuawei(int code) {
+        // Dev-only policy, after allowed() identity checks. Availability is NOT
+        // attestation. Both cases still require full server-verified Huawei evidence.
+        // No fallback from a failed Play Integrity token/verdict is implemented.
+        return code == 1 || code == 9;
     }
 }
