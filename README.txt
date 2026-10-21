@@ -2,7 +2,7 @@ Mekfeya HMS App Check bridge — Dev integration candidate
 
 STATUS
 This is not a general-purpose or production-ready attestation package.
-Version 0.1.0-dev.4 installs a native Firebase AppCheckProvider in the registered
+Version 0.1.0-dev.5 installs a native Firebase AppCheckProvider in the registered
 Development Android release only. Telecloud and Production are rejected.
 Successful compilation and synthetic tests are not physical-device acceptance.
 
@@ -27,6 +27,9 @@ persistence. Native caches are NOT a replacement for the existing 30-second
 financial verification lease or local policy checks.
 
 DEPENDENCY
+Firebase Core >=3.14.0 <5.0.0 is supported. Native compilation tested with
+Core 3.14.0/App Check 0.3.2+7 and Core 4.15.0/App Check 0.4.8.
+Keep FlutterFlow's generated Firebase versions; do not force a downgrade.
 FlutterFlow supports Git-hosted plugins in Custom Dependencies. Use:
 
 mekfeya_hms_appcheck_bridge:
