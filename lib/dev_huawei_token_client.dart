@@ -79,18 +79,21 @@ class DevHuaweiTokenClient {
         'id': c['id'],
         'jws': jws
       });
-      stage = 'TOKEN';
+      stage = 'TOKEN_RESPONSE';
       if (response['token'] is! String || response['ttlMillis'] != 1800000) {
         throw StateError('HMS_INVALID_TOKEN_RESPONSE');
       }
       final token = response['token'] as String;
+      stage = 'TOKEN_SHAPE';
       if (token.length > 16000 || token.split('.').length != 3) {
         throw StateError('HMS_INVALID_TOKEN_RESPONSE');
       }
       // Read expiry only for SDK cache scheduling. This is NOT signature validation
       // or an authorization decision; backend verifies official Firebase JWT.
+      stage = 'TOKEN_DECODE';
       final claims = jsonDecode(utf8
           .decode(base64Url.decode(base64Url.normalize(token.split('.')[1]))));
+      stage = 'TOKEN_IDENTITY';
       if (claims is! Map ||
           claims['exp'] is! int ||
           claims['iss'] !=
@@ -100,9 +103,44 @@ class DevHuaweiTokenClient {
           !(claims['aud'] as List).contains('projects/853460861480')) {
         throw StateError('HMS_INVALID_TOKEN_RESPONSE');
       }
-      final result = BridgeToken(token, (claims['exp'] as int) * 1000);
-      result
-          .toMessage(); // Same bounded expiry/shape contract as the native bridge.
+      stage = 'TOKEN_LIFETIME';
+      final issued = claims['iat'];
+      final expires = claims['exp'] as int;
+      if (issued is! int || expires <= issued || expires - issued > 1800) {
+        throw StateError('HMS_INVALID_TOKEN_RESPONSE');
+      }
+      final nowMillis = DateTime.now().millisecondsSinceEpoch;
+      final expiresMillis = expires * 1000;
+      // Bound tolerance for server/device clock differences. Never extend the
+      // JWT, accept an expired JWT, or use these decoded claims as authorization.
+      stage = 'TOKEN_CLOCK_SKEW';
+      if (issued * 1000 > nowMillis + 120000 ||
+          expiresMillis > nowMillis + 1920000) {
+        throw StateError('HMS_INVALID_TOKEN_RESPONSE');
+      }
+      stage = 'TOKEN_EXPIRED';
+      if (expiresMillis <= nowMillis + 1000) {
+        throw StateError('HMS_INVALID_TOKEN_RESPONSE');
+      }
+      // SDK cache expiry is conservative and separate from the signed JWT exp.
+      // Leave a minute of margin instead of testing an exact 30-minute boundary.
+      final result = BridgeToken(token, min(expiresMillis, nowMillis + 1740000));
+      stage = 'TOKEN_CACHE_CONTRACT';
+      try {
+        result.toMessage(); // Original validator remains authoritative.
+      } catch (_) {
+        // Classify only after rejection; never log tokens, claims, or times.
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (!RegExp(r'^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$')
+            .hasMatch(token)) {
+          stage = 'TOKEN_CHARACTERS';
+        } else if (result.expiresAtMillis <= now + 1000) {
+          stage = 'TOKEN_EXPIRED';
+        } else if (result.expiresAtMillis > now + 1800000) {
+          stage = 'TOKEN_FUTURE_EXPIRY';
+        }
+        rethrow;
+      }
       return result;
     } catch (error) {
       // Accept only a bounded numeric SDK code, never its message/details.
@@ -120,7 +158,7 @@ class DevHuaweiTokenClient {
           ? 'HMS_SDK_$number'
           : httpCode != null
               ? 'HMS_${stage}_$httpCode'
-              : 'HMS_${stage}_${error is TimeoutException ? 'TIMEOUT' : 'FAILED'}';
+              : 'HMS_${stage}_${error is TimeoutException ? 'TIMEOUT' : error is http.ClientException ? 'NETWORK' : 'FAILED'}';
       rethrow;
     }
   }

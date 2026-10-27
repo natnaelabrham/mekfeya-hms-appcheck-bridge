@@ -6,9 +6,47 @@ import 'package:http/testing.dart';
 import 'package:mekfeya_hms_appcheck_bridge/dev_huawei_token_client.dart';
 
 void main() {
+  test('transport failure is distinguished from policy rejection', () async {
+    final client = DevHuaweiTokenClient(publicApiKey: 'public',
+      clientFactory: () => MockClient((_) async => throw http.ClientException('private network details')));
+    await expectLater(client.fetchToken(), throwsStateError);
+    expect(DevHuaweiTokenClient.lastDiagnostic, 'HMS_CHALLENGE_NETWORK');
+  });
+  for (final kind in ['RESPONSE', 'SHAPE', 'DECODE', 'IDENTITY',
+    'CHARACTERS', 'EXPIRED', 'FUTURE_EXPIRY']) {
+    test('Dev token diagnostic $kind remains fail closed', () async {
+      final payload = <String, Object>{
+        'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000 +
+            (kind == 'EXPIRED' ? -1860 : kind == 'FUTURE_EXPIRY' ? 1800 : 0),
+        'exp': DateTime.now().millisecondsSinceEpoch ~/ 1000 +
+            (kind == 'EXPIRED' ? -60 : kind == 'FUTURE_EXPIRY' ? 3600 : 1700),
+        'iss': 'https://firebaseappcheck.googleapis.com/853460861480',
+        'sub': '1:853460861480:android:dcad031b3ecec2196b6b1d',
+        'aud': ['projects/853460861480'],
+      };
+      if (kind == 'IDENTITY') payload['sub'] = 'wrong-app';
+      final encoded = base64Url.encode(utf8.encode(jsonEncode(payload)))
+          .replaceAll('=', '');
+      final token = kind == 'SHAPE' ? 'invalid' : kind == 'DECODE'
+          ? 'header.!.signature' : '${kind == 'CHARACTERS' ? '!' : 'header'}.$encoded.signature';
+      final client = DevHuaweiTokenClient(publicApiKey: 'public',
+        clientFactory: () => MockClient((r) async => http.Response(jsonEncode(
+          jsonDecode(r.body)['operation'] == 'challenge' ? {
+            'purpose': 'release', 'appId': '119433157',
+            'id': '12345678-1234-1234-1234-123456789abc',
+            'nonce': base64Encode(List.filled(32, 1)),
+          } : {'token': token, 'ttlMillis': kind == 'RESPONSE' ? 0 : 1800000}), 200)),
+        attest: (_) async => 'a.b.c');
+      await expectLater(client.fetchToken(), throwsA(predicate(
+        (e) => e.toString() == 'Bad state: HMS_VERIFICATION_UNAVAILABLE')));
+      expect(DevHuaweiTokenClient.lastDiagnostic, kind == 'FUTURE_EXPIRY'
+          ? 'HMS_TOKEN_CLOCK_SKEW_FAILED' : 'HMS_TOKEN_${kind}_FAILED');
+    });
+  }
   String fakeToken({String project = '853460861480'}) {
     final body = base64Url
         .encode(utf8.encode(jsonEncode({
+          'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'exp': DateTime.now().millisecondsSinceEpoch ~/ 1000 + 1700,
           'iss': 'https://firebaseappcheck.googleapis.com/$project',
           'aud': ['projects/$project'],
@@ -94,7 +132,7 @@ void main() {
             200)),
         attest: (_) async => 'a.b.c');
     await expectLater(client.fetchToken(), throwsStateError);
-    expect(DevHuaweiTokenClient.lastDiagnostic, 'HMS_TOKEN_FAILED');
+    expect(DevHuaweiTokenClient.lastDiagnostic, 'HMS_TOKEN_IDENTITY_FAILED');
   });
   test('numeric Huawei error survives without message or details', () async {
     final client = DevHuaweiTokenClient(
